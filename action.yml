@@ -1,11 +1,29 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'semver-action'
+description: 'GitHub Action to bump semantic versioning based on releases or tags'
+author: 'flatherskevin'
+
 inputs:
-  milliseconds: # change this
+  incrementLevel:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: "Increment a version by the specified level. Level can be one of: major, minor, patch, premajor, preminor, prepatch, or prerelease"
+  token:
+    required: true
+    description: GitHub token to access API
+  prefix:
+    required: false
+    description: Filter versions by prefix
+    default: ''
+  source:
+    required: false
+    description: "Where to pull versions from. Source can be one of: releases or tags"
+    default: tags
+
+outputs:
+  currentVersion:
+    description: The current version used as a base
+  nextVersion: 
+    description: The new version after a semantic version bump
+
 runs:
   using: 'node16'
   main: 'dist/index.js'

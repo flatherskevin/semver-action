@@ -16,6 +16,10 @@ on:
       - '**.md'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.ref }}-check-dist
+  cancel-in-progress: true
+
 jobs:
   check-dist:
     runs-on: ubuntu-latest
