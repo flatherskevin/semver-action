@@ -12,6 +12,16 @@ class Version {
   }
 }
 
+class Repository {
+  name: string
+  owner: string
+  constructor() {
+    const tmp: string[] = process.env.GITHUB_REPOSITORY?.split('/') ?? []
+    this.owner = tmp?.[0] ?? ''
+    this.name = tmp?.[1] ?? ''
+  }
+}
+
 type SourceType = 'tags' | 'releases'
 
 async function getOctokitClient(
@@ -23,21 +33,20 @@ async function getOctokitClient(
 async function getVersionsFromTags(
   octokit: InstanceType<typeof GitHub>
 ): Promise<Version[]> {
-  const raw: string[] = process.env.GITHUB_REPOSITORY?.split('/') ?? []
-  const owner = raw?.[0] ?? ''
-  const repo = raw?.[1] ?? ''
-  const res = (await octokit.paginate(`GET /repos/${owner}/${repo}/tags`)) ?? []
+  const repo = new Repository()
+  const res =
+    (await octokit.paginate(`GET /repos/${repo.owner}/${repo.name}/tags`)) ?? []
   return res.map((data: any) => new Version(data.name))
 }
 
 async function getVersionsFromReleases(
   octokit: InstanceType<typeof GitHub>
 ): Promise<Version[]> {
-  const raw: string[] = process.env.GITHUB_REPOSITORY?.split('/') ?? []
-  const owner = raw?.[0] ?? ''
-  const repo = raw?.[1] ?? ''
+  const repo = new Repository()
   const res =
-    (await octokit.paginate(`GET /repos/${owner}/${repo}/releases`)) ?? []
+    (await octokit.paginate(
+      `GET /repos/${repo.owner}/${repo.name}/releases`
+    )) ?? []
   return res.map((data: any) => new Version(data.name))
 }
 
@@ -51,11 +60,14 @@ function filterAndSortVersions(
       let check = true
       if (
         !includePrereleases &&
-        (version.semver.build || version.semver.prerelease)
+        (version.semver.build.length || version.semver.prerelease.length)
       ) {
         check = false
       }
       check = check && version.raw.startsWith(prefix) ? true : false
+      if (!check) {
+        core.debug(`filtering out ${version.raw}`)
+      }
       return check
     })
     .sort((x, y) => {
@@ -93,7 +105,7 @@ async function run(): Promise<void> {
     } else {
       throw Error(`${source} is not a valid value for "source"`)
     }
-    core.debug('filtering and sorting versions')
+    core.debug(`filtering and sorting ${allVersions.length} versions`)
     const filteredAndSortedVersions: Version[] = filterAndSortVersions(
       allVersions,
       prefix,
