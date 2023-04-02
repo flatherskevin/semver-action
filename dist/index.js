@@ -49,28 +49,32 @@ class Version {
         this.semver = (_a = semver.coerce(raw)) !== null && _a !== void 0 ? _a : new semver.SemVer('0.0.0');
     }
 }
+class Repository {
+    constructor() {
+        var _a, _b, _c, _d;
+        const tmp = (_b = (_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')) !== null && _b !== void 0 ? _b : [];
+        this.owner = (_c = tmp === null || tmp === void 0 ? void 0 : tmp[0]) !== null && _c !== void 0 ? _c : '';
+        this.name = (_d = tmp === null || tmp === void 0 ? void 0 : tmp[1]) !== null && _d !== void 0 ? _d : '';
+    }
+}
 function getOctokitClient(githubToken) {
     return __awaiter(this, void 0, void 0, function* () {
         return github.getOctokit(githubToken);
     });
 }
 function getVersionsFromTags(octokit) {
-    var _a, _b, _c, _d, _e;
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const raw = (_b = (_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')) !== null && _b !== void 0 ? _b : [];
-        const owner = (_c = raw === null || raw === void 0 ? void 0 : raw[0]) !== null && _c !== void 0 ? _c : '';
-        const repo = (_d = raw === null || raw === void 0 ? void 0 : raw[1]) !== null && _d !== void 0 ? _d : '';
-        const res = (_e = (yield octokit.paginate(`GET /repos/${owner}/${repo}/tags`))) !== null && _e !== void 0 ? _e : [];
+        const repo = new Repository();
+        const res = (_a = (yield octokit.paginate(`GET /repos/${repo.owner}/${repo.name}/tags`))) !== null && _a !== void 0 ? _a : [];
         return res.map((data) => new Version(data.name));
     });
 }
 function getVersionsFromReleases(octokit) {
-    var _a, _b, _c, _d, _e;
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const raw = (_b = (_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')) !== null && _b !== void 0 ? _b : [];
-        const owner = (_c = raw === null || raw === void 0 ? void 0 : raw[0]) !== null && _c !== void 0 ? _c : '';
-        const repo = (_d = raw === null || raw === void 0 ? void 0 : raw[1]) !== null && _d !== void 0 ? _d : '';
-        const res = (_e = (yield octokit.paginate(`GET /repos/${owner}/${repo}/releases`))) !== null && _e !== void 0 ? _e : [];
+        const repo = new Repository();
+        const res = (_a = (yield octokit.paginate(`GET /repos/${repo.owner}/${repo.name}/releases`))) !== null && _a !== void 0 ? _a : [];
         return res.map((data) => new Version(data.name));
     });
 }
@@ -79,10 +83,13 @@ function filterAndSortVersions(versions, prefix, includePrereleases) {
         .filter(version => {
         let check = true;
         if (!includePrereleases &&
-            (version.semver.build || version.semver.prerelease)) {
+            (version.semver.build.length || version.semver.prerelease.length)) {
             check = false;
         }
         check = check && version.raw.startsWith(prefix) ? true : false;
+        if (!check) {
+            core.debug(`filtering out ${version.raw}`);
+        }
         return check;
     })
         .sort((x, y) => {
@@ -116,7 +123,7 @@ function run() {
             else {
                 throw Error(`${source} is not a valid value for "source"`);
             }
-            core.debug('filtering and sorting versions');
+            core.debug(`filtering and sorting ${allVersions.length} versions`);
             const filteredAndSortedVersions = filterAndSortVersions(allVersions, prefix, includePrereleases);
             const currentVersion = (_a = filteredAndSortedVersions === null || filteredAndSortedVersions === void 0 ? void 0 : filteredAndSortedVersions[0]) !== null && _a !== void 0 ? _a : new Version('0.0.0');
             core.debug(`${currentVersion.semver.raw} bumping to next version`);
