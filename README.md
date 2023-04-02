@@ -16,11 +16,9 @@ jobs:
         with:
           incrementLevel: patch
           source: tags
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           name: ${{ steps.version.outputs.nextVersion }}
           tag_name: ${{ steps.version.outputs.nextVersion }}
-          token: ${{ secrets.GITHUB_TOKEN }}
 ```

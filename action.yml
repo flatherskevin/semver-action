@@ -9,6 +9,7 @@ inputs:
   token:
     required: true
     description: GitHub token to access API
+    default: ${{ github.token }}
   prefix:
     required: false
     description: Filter versions by prefix
