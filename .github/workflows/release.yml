@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - main
+      - hotfix/release
 
 concurrency:
   group: ${{ github.ref }}-release
@@ -11,6 +11,8 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
       - name: version
@@ -19,11 +21,9 @@ jobs:
         with:
           incrementLevel: patch
           source: tags
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           name: ${{ steps.version.outputs.nextVersion }}
           tag_name: ${{ steps.version.outputs.nextVersion }}
-          token: ${{ secrets.GITHUB_TOKEN }}
       

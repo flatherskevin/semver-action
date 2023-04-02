@@ -28,4 +28,3 @@ jobs:
           incrementLevel: patch
           source: tags
           prefix: ""
-          token: ${{ secrets.GITHUB_TOKEN }}
