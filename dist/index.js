@@ -74,9 +74,17 @@ function getVersionsFromReleases(octokit) {
         return res.map((data) => new Version(data.name));
     });
 }
-function filterAndSortVersions(tags, prefix) {
-    return tags
-        .filter(tag => tag.raw.startsWith(prefix) && tag.semver)
+function filterAndSortVersions(versions, prefix, includePrereleases) {
+    return versions
+        .filter(version => {
+        let check = true;
+        if (!includePrereleases &&
+            (version.semver.build || version.semver.prerelease)) {
+            check = false;
+        }
+        check = check && version.raw.startsWith(prefix) ? true : false;
+        return check;
+    })
         .sort((x, y) => {
         return semver.compare(y.semver, x.semver);
     });
@@ -93,6 +101,7 @@ function run() {
             const prefix = core.getInput('prefix');
             const source = core.getInput('source');
             const incrementLevel = core.getInput('incrementLevel');
+            const includePrereleases = core.getInput('includePrereleases') === 'true';
             const octokit = yield getOctokitClient(githubToken);
             core.debug('client created');
             let allVersions = [];
@@ -108,7 +117,7 @@ function run() {
                 throw Error(`${source} is not a valid value for "source"`);
             }
             core.debug('filtering and sorting versions');
-            const filteredAndSortedVersions = filterAndSortVersions(allVersions, prefix);
+            const filteredAndSortedVersions = filterAndSortVersions(allVersions, prefix, includePrereleases);
             const currentVersion = (_a = filteredAndSortedVersions === null || filteredAndSortedVersions === void 0 ? void 0 : filteredAndSortedVersions[0]) !== null && _a !== void 0 ? _a : new Version('0.0.0');
             core.debug(`${currentVersion.semver.raw} bumping to next version`);
             const nextVersion = bumpVersion(currentVersion, incrementLevel);

@@ -41,9 +41,23 @@ async function getVersionsFromReleases(
   return res.map((data: any) => new Version(data.name))
 }
 
-function filterAndSortVersions(tags: Version[], prefix: string): Version[] {
-  return tags
-    .filter(tag => tag.raw.startsWith(prefix) && tag.semver)
+function filterAndSortVersions(
+  versions: Version[],
+  prefix: string,
+  includePrereleases: boolean
+): Version[] {
+  return versions
+    .filter(version => {
+      let check = true
+      if (
+        !includePrereleases &&
+        (version.semver.build || version.semver.prerelease)
+      ) {
+        check = false
+      }
+      check = check && version.raw.startsWith(prefix) ? true : false
+      return check
+    })
     .sort((x, y) => {
       return semver.compare(y.semver, x.semver)
     })
@@ -65,6 +79,8 @@ async function run(): Promise<void> {
     const incrementLevel: semver.ReleaseType = core.getInput(
       'incrementLevel'
     ) as semver.ReleaseType
+    const includePrereleases: boolean =
+      core.getInput('includePrereleases') === 'true'
     const octokit = await getOctokitClient(githubToken)
     core.debug('client created')
     let allVersions: Version[] = []
@@ -80,7 +96,8 @@ async function run(): Promise<void> {
     core.debug('filtering and sorting versions')
     const filteredAndSortedVersions: Version[] = filterAndSortVersions(
       allVersions,
-      prefix
+      prefix,
+      includePrereleases
     )
     const currentVersion =
       filteredAndSortedVersions?.[0] ?? new Version('0.0.0')
