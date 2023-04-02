@@ -3,7 +3,7 @@ import * as github from '@actions/github'
 import {GitHub} from '@actions/github/lib/utils'
 import * as semver from 'semver'
 
-class Version {
+export class Version {
   raw: string
   semver: semver.SemVer
   constructor(raw: string) {
@@ -12,7 +12,7 @@ class Version {
   }
 }
 
-class Repository {
+export class Repository {
   name: string
   owner: string
   constructor() {
@@ -22,15 +22,15 @@ class Repository {
   }
 }
 
-type SourceType = 'tags' | 'releases'
+export type SourceType = 'tags' | 'releases'
 
-async function getOctokitClient(
+export async function getOctokitClient(
   githubToken: string
 ): Promise<InstanceType<typeof GitHub>> {
   return github.getOctokit(githubToken)
 }
 
-async function getVersionsFromTags(
+export async function getVersionsFromTags(
   octokit: InstanceType<typeof GitHub>
 ): Promise<Version[]> {
   const repo = new Repository()
@@ -39,7 +39,7 @@ async function getVersionsFromTags(
   return res.map((data: any) => new Version(data.name))
 }
 
-async function getVersionsFromReleases(
+export async function getVersionsFromReleases(
   octokit: InstanceType<typeof GitHub>
 ): Promise<Version[]> {
   const repo = new Repository()
@@ -50,14 +50,14 @@ async function getVersionsFromReleases(
   return res.map((data: any) => new Version(data.name))
 }
 
-function filterAndSortVersions(
+export function filterAndSortVersions(
   versions: Version[],
   prefix: string,
   includePrereleases: boolean
 ): Version[] {
   return versions
     .filter(version => {
-      let check = true
+      let check = semver.coerce(version.raw) != null
       if (
         !includePrereleases &&
         (version.semver.build.length || version.semver.prerelease.length)
@@ -75,7 +75,7 @@ function filterAndSortVersions(
     })
 }
 
-function bumpVersion(
+export function bumpVersion(
   version: Version,
   incrementLevel: semver.ReleaseType
 ): Version {
@@ -83,7 +83,7 @@ function bumpVersion(
   return new Version(tmp.semver.inc(incrementLevel).raw)
 }
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   try {
     const githubToken: string = core.getInput('token')
     const prefix = core.getInput('prefix')
