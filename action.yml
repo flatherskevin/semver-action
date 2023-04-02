@@ -5,7 +5,7 @@ author: 'flatherskevin'
 inputs:
   incrementLevel:
     required: true
-    description: "Increment a version by the specified level. Level can be one of: major, minor, patch, premajor, preminor, prepatch, or prerelease"
+    description: "Increment a version by the specified level. Can be one of: major, minor, patch, premajor, preminor, prepatch, or prerelease"
   token:
     required: true
     description: GitHub token to access API
@@ -16,8 +16,12 @@ inputs:
     default: ''
   source:
     required: false
-    description: "Where to pull versions from. Source can be one of: releases or tags"
+    description: "Where to pull versions from. Can be one of: releases or tags"
     default: tags
+  includePrereleases:
+    required: false
+    description: Include prerleases when determining the latest version to increment
+    default: "false"
 
 outputs:
   currentVersion:
