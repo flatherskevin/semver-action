@@ -6,6 +6,10 @@ on: # rebuild any PRs and main branch changes
       - main
       - 'releases/*'
 
+concurrency:
+  group: ${{ github.ref }}-build-test
+  cancel-in-progress: true
+
 jobs:
   build: # make sure build/ci work properly
     runs-on: ubuntu-latest
@@ -21,4 +25,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./
         with:
-          milliseconds: 1000
+          incrementLevel: patch
+          source: tags
+          prefix: ""
+          token: ${{ secrets.GITHUB_TOKEN }}

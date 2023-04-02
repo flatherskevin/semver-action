@@ -1,10 +1,13 @@
-# Overview
+name: Release
 
-GitHub Action to bump semantic versioning based on releases or tag
+on:
+  push:
+    branches:
+      - main
 
-## Usage
+concurrency:
+  group: ${{ github.ref }}-release
 
-```yaml
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -12,7 +15,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: version
         id: version
-        uses: flatherskevin/semver-action@0.0.1
+        uses: ./
         with:
           incrementLevel: patch
           source: tags
@@ -23,4 +26,4 @@ jobs:
           name: ${{ steps.version.outputs.nextVersion }}
           tag_name: ${{ steps.version.outputs.nextVersion }}
           token: ${{ secrets.GITHUB_TOKEN }}
-```
+      
