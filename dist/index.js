@@ -78,7 +78,8 @@ function filterAndSortVersions(versions, prefix, includePrereleases) {
     return versions
         .filter(version => {
         let check = true;
-        if (!includePrereleases && (version.semver.build || version.semver.prerelease)) {
+        if (!includePrereleases &&
+            (version.semver.build || version.semver.prerelease)) {
             check = false;
         }
         check = check && version.raw.startsWith(prefix) ? true : false;
