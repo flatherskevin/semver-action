@@ -1,6 +1,9 @@
-name: 'Bump SemVer Action'
-description: 'GitHub Action to bump semantic versioning based on releases or tags'
-author: 'flatherskevin'
+name: Bump SemVer Action
+description: GitHub Action to bump semantic versioning based on releases or tags
+author: flatherskevin
+branding:
+  icon: chevron-up
+  color: purple
 
 inputs:
   incrementLevel:
