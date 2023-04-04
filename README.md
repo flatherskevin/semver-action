@@ -1,6 +1,6 @@
 # Overview
 
-GitHub Action to bump semantic versioning based on releases or tag
+GitHub Action to bump semantic versioning based on releases or tags
 
 ## Usage
 

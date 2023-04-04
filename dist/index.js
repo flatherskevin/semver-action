@@ -39,6 +39,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = exports.bumpVersion = exports.filterAndSortVersions = exports.getVersionsFromReleases = exports.getVersionsFromTags = exports.getOctokitClient = exports.Repository = exports.Version = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
@@ -49,6 +50,7 @@ class Version {
         this.semver = (_a = semver.coerce(raw)) !== null && _a !== void 0 ? _a : new semver.SemVer('0.0.0');
     }
 }
+exports.Version = Version;
 class Repository {
     constructor() {
         var _a, _b, _c, _d;
@@ -57,11 +59,13 @@ class Repository {
         this.name = (_d = tmp === null || tmp === void 0 ? void 0 : tmp[1]) !== null && _d !== void 0 ? _d : '';
     }
 }
+exports.Repository = Repository;
 function getOctokitClient(githubToken) {
     return __awaiter(this, void 0, void 0, function* () {
         return github.getOctokit(githubToken);
     });
 }
+exports.getOctokitClient = getOctokitClient;
 function getVersionsFromTags(octokit) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -70,6 +74,7 @@ function getVersionsFromTags(octokit) {
         return res.map((data) => new Version(data.name));
     });
 }
+exports.getVersionsFromTags = getVersionsFromTags;
 function getVersionsFromReleases(octokit) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -78,10 +83,11 @@ function getVersionsFromReleases(octokit) {
         return res.map((data) => new Version(data.name));
     });
 }
+exports.getVersionsFromReleases = getVersionsFromReleases;
 function filterAndSortVersions(versions, prefix, includePrereleases) {
     return versions
         .filter(version => {
-        let check = true;
+        let check = semver.coerce(version.raw) != null;
         if (!includePrereleases &&
             (version.semver.build.length || version.semver.prerelease.length)) {
             check = false;
@@ -96,10 +102,12 @@ function filterAndSortVersions(versions, prefix, includePrereleases) {
         return semver.compare(y.semver, x.semver);
     });
 }
+exports.filterAndSortVersions = filterAndSortVersions;
 function bumpVersion(version, incrementLevel) {
     const tmp = new Version(version.semver.raw);
     return new Version(tmp.semver.inc(incrementLevel).raw);
 }
+exports.bumpVersion = bumpVersion;
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
@@ -140,6 +148,7 @@ function run() {
         }
     });
 }
+exports.run = run;
 run();
 
 
