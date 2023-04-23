@@ -27,6 +27,6 @@ jobs:
           name: ${{ steps.version.outputs.nextVersion }}
           tag_name: ${{ steps.version.outputs.nextVersion }}
       - name: Tag v1
-        run: git tag -f v1 ${{ steps.version.outputs.nextVersion }}
+        run: git tag -f v1
       - name: Push v1
         run: git push origin v1 --force
