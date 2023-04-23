@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: version
         id: version
-        uses: flatherskevin/semver-action@0.0.7
+        uses: flatherskevin/semver-action@v1
         with:
           incrementLevel: patch
           source: tags
