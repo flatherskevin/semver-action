@@ -28,4 +28,6 @@ jobs:
           source: tags
           prefix: ""
       - name: Lint
-        run: npm run lint
+        run: |
+          npm install
+          npm run lint
