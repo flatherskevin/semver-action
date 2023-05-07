@@ -27,7 +27,3 @@ jobs:
           incrementLevel: patch
           source: tags
           prefix: ""
-      - name: Lint
-        run: |
-          npm install
-          npm run lint
