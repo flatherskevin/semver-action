@@ -1,0 +1,31 @@
+name: Build and commit dist/
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.ref }}-build-dist
+  cancel-in-progress: true
+
+jobs:
+  build-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set Node.js 16.x
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: 16.x
+      - name: Install dependencies
+        run: npm ci
+      - name: Rebuild the dist/ directory
+        run: |
+          npm run build
+          npm run package
+      - name: Add and commit
+        uses: EndBug/add-and-commit@v9 # You can change this to use a specific version.
+        with:
+          add: "./dist"
+          message: "rebuilding ./dist"

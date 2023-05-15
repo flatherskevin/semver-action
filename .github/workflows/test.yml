@@ -21,7 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./
+      - name: Test bump version
+        uses: ./
         with:
           incrementLevel: patch
           source: tags
