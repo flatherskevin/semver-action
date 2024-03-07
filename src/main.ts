@@ -79,6 +79,14 @@ export function bumpVersion(
   version: Version,
   incrementLevel: semver.ReleaseType
 ): Version {
+  const commit: string = github.context.payload.head_commit.message
+  if (commit.includes('[patch]') || commit.startsWith('fix:')) {
+    incrementLevel = 'patch'
+  } else if (commit.includes('[minor]') || commit.startsWith('feat:')) {
+    incrementLevel = 'minor'
+  } else if (commit.includes('[major]') || commit.startsWith('feat!:')) {
+    incrementLevel = 'major'
+  }
   const tmp = new Version(version.semver.raw)
   return new Version(tmp.semver.inc(incrementLevel).raw)
 }

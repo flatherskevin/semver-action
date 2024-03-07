@@ -22,3 +22,14 @@ jobs:
           name: ${{ steps.version.outputs.nextVersion }}
           tag_name: ${{ steps.version.outputs.nextVersion }}
 ```
+
+`incrementLevel` can be dynamically modified by commit messages:
+- `patch` 
+  - if `[patch]` appears anywhere in the head commit message
+  - if the head commit message starts with `fix`
+- `minor` 
+  - if `[minor]` appears anywhere in the head commit message
+  - if the head commit message starts with `feat`
+- `major` 
+  - if `[major]` appears anywhere in the head commit message
+  - if the head commit message starts with `feat!`
