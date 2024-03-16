@@ -33,5 +33,5 @@ outputs:
     description: The new version after a semantic version bump
 
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
