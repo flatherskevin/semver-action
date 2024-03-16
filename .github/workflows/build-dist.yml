@@ -19,11 +19,11 @@ jobs:
         with:
           node-version: 20.x
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
       - name: Rebuild the dist/ directory
         run: |
-          npm run build
-          npm run package
+          yarn build
+          yarn package
       - name: Add and commit
         uses: EndBug/add-and-commit@v9 # You can change this to use a specific version.
         with:
