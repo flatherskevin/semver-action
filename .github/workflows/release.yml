@@ -22,7 +22,7 @@ jobs:
           incrementLevel: patch
           source: tags
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: ${{ steps.version.outputs.nextVersion }}
           tag_name: ${{ steps.version.outputs.nextVersion }}
