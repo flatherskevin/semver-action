@@ -23,7 +23,7 @@ inputs:
     default: tags
   includePrereleases:
     required: false
-    description: Include prerleases when determining the latest version to increment
+    description: Include prereleases when determining the latest version to increment
     default: "false"
 
 outputs:
