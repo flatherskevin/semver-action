@@ -32,4 +32,5 @@ jobs:
         with:
           add: "./dist"
           message: "rebuilding ./dist"
+          pull: --rebase
           push: -u origin HEAD:${{ env.BRANCH_NAME }}
