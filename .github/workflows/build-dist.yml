@@ -32,4 +32,4 @@ jobs:
         with:
           add: "./dist"
           message: "rebuilding ./dist"
-          push: ${{ env.BRANCH_NAME }} HEAD:${{ env.BRANCH_NAME }}
+          push: -u origin ${{ env.BRANCH_NAME }}
