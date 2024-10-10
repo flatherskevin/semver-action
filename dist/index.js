@@ -30,7 +30,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = exports.bumpVersion = exports.filterAndSortVersions = exports.getVersionsFromReleases = exports.getVersionsFromTags = exports.getOctokitClient = exports.Repository = exports.Version = void 0;
+exports.Repository = exports.Version = void 0;
+exports.getOctokitClient = getOctokitClient;
+exports.getVersionsFromTags = getVersionsFromTags;
+exports.getVersionsFromReleases = getVersionsFromReleases;
+exports.filterAndSortVersions = filterAndSortVersions;
+exports.bumpVersion = bumpVersion;
+exports.run = run;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
@@ -56,19 +62,16 @@ exports.Repository = Repository;
 async function getOctokitClient(githubToken) {
     return github.getOctokit(githubToken);
 }
-exports.getOctokitClient = getOctokitClient;
 async function getVersionsFromTags(octokit) {
     const repo = new Repository();
     const res = (await octokit.paginate(`GET /repos/${repo.owner}/${repo.name}/tags`)) ?? [];
     return res.map((data) => new Version(data.name));
 }
-exports.getVersionsFromTags = getVersionsFromTags;
 async function getVersionsFromReleases(octokit) {
     const repo = new Repository();
     const res = (await octokit.paginate(`GET /repos/${repo.owner}/${repo.name}/releases`)) ?? [];
     return res.map((data) => new Version(data.name));
 }
-exports.getVersionsFromReleases = getVersionsFromReleases;
 function filterAndSortVersions(versions, prefix, includePrereleases) {
     return versions
         .filter(version => {
@@ -87,12 +90,10 @@ function filterAndSortVersions(versions, prefix, includePrereleases) {
         return semver.compare(y.semver, x.semver);
     });
 }
-exports.filterAndSortVersions = filterAndSortVersions;
 function bumpVersion(version, incrementLevel) {
     const tmp = new Version(version.semver.raw);
     return new Version(tmp.semver.inc(incrementLevel).raw);
 }
-exports.bumpVersion = bumpVersion;
 async function run() {
     try {
         const githubToken = core.getInput('token');
@@ -130,7 +131,6 @@ async function run() {
         }
     }
 }
-exports.run = run;
 
 
 /***/ }),
