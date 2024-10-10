@@ -17,8 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.BRANCH_NAME }}
       - name: Set Node.js 20.x
         uses: actions/setup-node@v4.0.3
         with:
@@ -34,4 +32,4 @@ jobs:
         with:
           add: "./dist"
           message: "rebuilding ./dist"
-          push: -u origin HEAD:${{ env.BRANCH_NAME }}
+          push: -u origin HEAD:${{ env.BRANCH_NAME }} --force
