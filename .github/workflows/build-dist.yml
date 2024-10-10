@@ -9,6 +9,9 @@ concurrency:
   group: ${{ github.ref }}-build-dist
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 env:
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
