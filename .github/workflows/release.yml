@@ -19,7 +19,7 @@ jobs:
         id: version
         uses: ./
         with:
-          incrementLevel: patch
+          incrementLevel: auto
           source: tags
       - name: Release
         uses: softprops/action-gh-release@v2

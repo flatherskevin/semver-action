@@ -7,8 +7,9 @@ branding:
 
 inputs:
   incrementLevel:
-    required: true
-    description: "Increment a version by the specified level. Can be one of: major, minor, patch, premajor, preminor, prepatch, or prerelease"
+    required: false
+    default: auto
+    description: "Increment a version by the specified level. Can be one of: major, minor, patch, premajor, preminor, prepatch, prerelease, or auto (detects from PR title or commit message)"
   token:
     required: true
     description: GitHub token to access API
@@ -29,7 +30,7 @@ inputs:
 outputs:
   currentVersion:
     description: The current version used as a base
-  nextVersion: 
+  nextVersion:
     description: The new version after a semantic version bump
 
 runs:

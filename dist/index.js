@@ -30,10 +30,29 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = exports.bumpVersion = exports.filterAndSortVersions = exports.getVersionsFromReleases = exports.getVersionsFromTags = exports.getOctokitClient = exports.Repository = exports.Version = void 0;
+exports.Repository = exports.Version = void 0;
+exports.getOctokitClient = getOctokitClient;
+exports.getVersionsFromTags = getVersionsFromTags;
+exports.getVersionsFromReleases = getVersionsFromReleases;
+exports.filterAndSortVersions = filterAndSortVersions;
+exports.bumpVersion = bumpVersion;
+exports.detectIncrementFromText = detectIncrementFromText;
+exports.getIncrementFromPR = getIncrementFromPR;
+exports.getIncrementFromLatestCommit = getIncrementFromLatestCommit;
+exports.determineIncrementLevel = determineIncrementLevel;
+exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const semver = __importStar(__nccwpck_require__(2088));
+const INCREMENT_TYPES = [
+    'major',
+    'minor',
+    'patch',
+    'premajor',
+    'preminor',
+    'prepatch',
+    'prerelease'
+];
 class Version {
     raw;
     semver;
@@ -56,19 +75,16 @@ exports.Repository = Repository;
 async function getOctokitClient(githubToken) {
     return github.getOctokit(githubToken);
 }
-exports.getOctokitClient = getOctokitClient;
 async function getVersionsFromTags(octokit) {
     const repo = new Repository();
     const res = (await octokit.paginate(`GET /repos/${repo.owner}/${repo.name}/tags`)) ?? [];
     return res.map((data) => new Version(data.name));
 }
-exports.getVersionsFromTags = getVersionsFromTags;
 async function getVersionsFromReleases(octokit) {
     const repo = new Repository();
     const res = (await octokit.paginate(`GET /repos/${repo.owner}/${repo.name}/releases`)) ?? [];
     return res.map((data) => new Version(data.name));
 }
-exports.getVersionsFromReleases = getVersionsFromReleases;
 function filterAndSortVersions(versions, prefix, includePrereleases) {
     return versions
         .filter(version => {
@@ -87,21 +103,57 @@ function filterAndSortVersions(versions, prefix, includePrereleases) {
         return semver.compare(y.semver, x.semver);
     });
 }
-exports.filterAndSortVersions = filterAndSortVersions;
 function bumpVersion(version, incrementLevel) {
     const tmp = new Version(version.semver.raw);
     return new Version(tmp.semver.inc(incrementLevel).raw);
 }
-exports.bumpVersion = bumpVersion;
+function detectIncrementFromText(text) {
+    if (!text) {
+        return null;
+    }
+    const lowerText = text.toLowerCase();
+    for (const incrementType of INCREMENT_TYPES) {
+        if (lowerText.includes(`[${incrementType}]`)) {
+            return incrementType;
+        }
+    }
+    return null;
+}
+async function getIncrementFromPR() {
+    return detectIncrementFromText(github.context.payload.pull_request?.title);
+}
+async function getIncrementFromLatestCommit() {
+    return detectIncrementFromText(github.context.payload.head_commit?.message);
+}
+async function determineIncrementLevel(incrementLevel) {
+    if (incrementLevel !== 'auto') {
+        return incrementLevel;
+    }
+    if (github.context.payload.pull_request) {
+        const prIncrement = await getIncrementFromPR();
+        if (prIncrement) {
+            core.debug(`Found increment type [${prIncrement}] in PR title`);
+            return prIncrement;
+        }
+    }
+    const commitIncrement = await getIncrementFromLatestCommit();
+    if (commitIncrement) {
+        core.debug(`Found increment type [${commitIncrement}] in latest commit`);
+        return commitIncrement;
+    }
+    core.debug('No increment type found, defaulting to patch');
+    return 'patch';
+}
 async function run() {
     try {
         const githubToken = core.getInput('token');
         const prefix = core.getInput('prefix');
         const source = core.getInput('source');
-        const incrementLevel = core.getInput('incrementLevel');
+        const incrementLevelInput = core.getInput('incrementLevel');
         const includePrereleases = core.getInput('includePrereleases') === 'true';
         const octokit = await getOctokitClient(githubToken);
         core.debug('client created');
+        const incrementLevel = await determineIncrementLevel(incrementLevelInput);
         let allVersions = [];
         if (source === 'tags') {
             core.debug('coercing with tags');
@@ -130,7 +182,6 @@ async function run() {
         }
     }
 }
-exports.run = run;
 
 
 /***/ }),
@@ -2892,7 +2943,7 @@ class HttpClient {
         }
         const usingSsl = parsedUrl.protocol === 'https:';
         proxyAgent = new undici_1.ProxyAgent(Object.assign({ uri: proxyUrl.href, pipelining: !this._keepAlive ? 0 : 1 }, ((proxyUrl.username || proxyUrl.password) && {
-            token: `${proxyUrl.username}:${proxyUrl.password}`
+            token: `Basic ${Buffer.from(`${proxyUrl.username}:${proxyUrl.password}`).toString('base64')}`
         })));
         this._proxyAgentDispatcher = proxyAgent;
         if (usingSsl && this._ignoreSslError) {
@@ -3006,11 +3057,11 @@ function getProxyUrl(reqUrl) {
     })();
     if (proxyVar) {
         try {
-            return new URL(proxyVar);
+            return new DecodedURL(proxyVar);
         }
         catch (_a) {
             if (!proxyVar.startsWith('http://') && !proxyVar.startsWith('https://'))
-                return new URL(`http://${proxyVar}`);
+                return new DecodedURL(`http://${proxyVar}`);
         }
     }
     else {
@@ -3068,6 +3119,19 @@ function isLoopbackAddress(host) {
         hostLower.startsWith('127.') ||
         hostLower.startsWith('[::1]') ||
         hostLower.startsWith('[0:0:0:0:0:0:0:1]'));
+}
+class DecodedURL extends URL {
+    constructor(url, base) {
+        super(url, base);
+        this._decodedUsername = decodeURIComponent(super.username);
+        this._decodedPassword = decodeURIComponent(super.password);
+    }
+    get username() {
+        return this._decodedUsername;
+    }
+    get password() {
+        return this._decodedPassword;
+    }
 }
 //# sourceMappingURL=proxy.js.map
 
@@ -3690,7 +3754,7 @@ var import_graphql = __nccwpck_require__(7);
 var import_auth_token = __nccwpck_require__(7864);
 
 // pkg/dist-src/version.js
-var VERSION = "5.1.0";
+var VERSION = "5.2.0";
 
 // pkg/dist-src/index.js
 var noop = () => {
@@ -3857,7 +3921,7 @@ module.exports = __toCommonJS(dist_src_exports);
 var import_universal_user_agent = __nccwpck_require__(3843);
 
 // pkg/dist-src/version.js
-var VERSION = "9.0.4";
+var VERSION = "9.0.5";
 
 // pkg/dist-src/defaults.js
 var userAgent = `octokit-endpoint.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
@@ -4242,7 +4306,7 @@ var import_request3 = __nccwpck_require__(8636);
 var import_universal_user_agent = __nccwpck_require__(3843);
 
 // pkg/dist-src/version.js
-var VERSION = "7.0.2";
+var VERSION = "7.1.0";
 
 // pkg/dist-src/with-defaults.js
 var import_request2 = __nccwpck_require__(8636);
@@ -4399,7 +4463,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "9.2.2";
+var VERSION = "9.2.1";
 
 // pkg/dist-src/normalize-paginated-list-response.js
 function normalizePaginatedListResponse(response) {
@@ -4447,7 +4511,7 @@ function iterator(octokit, route, parameters) {
           const response = await requestMethod({ method, url, headers });
           const normalizedResponse = normalizePaginatedListResponse(response);
           url = ((normalizedResponse.headers.link || "").match(
-            /<([^<>]+)>;\s*rel="next"/
+            /<([^>]+)>;\s*rel="next"/
           ) || [])[1];
           return { value: normalizedResponse };
         } catch (error) {
@@ -7067,7 +7131,7 @@ var import_endpoint = __nccwpck_require__(4471);
 var import_universal_user_agent = __nccwpck_require__(3843);
 
 // pkg/dist-src/version.js
-var VERSION = "8.2.0";
+var VERSION = "8.4.0";
 
 // pkg/dist-src/is-plain-object.js
 function isPlainObject(value) {
@@ -7092,7 +7156,7 @@ function getBufferResponse(response) {
 
 // pkg/dist-src/fetch-wrapper.js
 function fetchWrapper(requestOptions) {
-  var _a, _b, _c;
+  var _a, _b, _c, _d;
   const log = requestOptions.request && requestOptions.request.log ? requestOptions.request.log : console;
   const parseSuccessResponseBody = ((_a = requestOptions.request) == null ? void 0 : _a.parseSuccessResponseBody) !== false;
   if (isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
@@ -7113,8 +7177,9 @@ function fetchWrapper(requestOptions) {
   return fetch(requestOptions.url, {
     method: requestOptions.method,
     body: requestOptions.body,
+    redirect: (_c = requestOptions.request) == null ? void 0 : _c.redirect,
     headers: requestOptions.headers,
-    signal: (_c = requestOptions.request) == null ? void 0 : _c.signal,
+    signal: (_d = requestOptions.request) == null ? void 0 : _d.signal,
     // duplex must be set if request.body is ReadableStream or Async Iterables.
     // See https://fetch.spec.whatwg.org/#dom-requestinit-duplex.
     ...requestOptions.body && { duplex: "half" }
