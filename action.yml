@@ -8,7 +8,7 @@ branding:
 inputs:
   incrementLevel:
     required: false
-    default: auto
+    default: patch
     description: "Increment a version by the specified level. Can be one of: major, minor, patch, premajor, preminor, prepatch, prerelease, or auto (detects from PR title or commit message)"
   token:
     required: true
