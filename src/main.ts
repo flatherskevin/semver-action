@@ -3,6 +3,16 @@ import * as github from '@actions/github'
 import {GitHub} from '@actions/github/lib/utils'
 import * as semver from 'semver'
 
+const INCREMENT_TYPES: semver.ReleaseType[] = [
+  'major',
+  'minor',
+  'patch',
+  'premajor',
+  'preminor',
+  'prepatch',
+  'prerelease'
+]
+
 export class Version {
   raw: string
   semver: semver.SemVer
@@ -83,18 +93,64 @@ export function bumpVersion(
   return new Version(tmp.semver.inc(incrementLevel).raw)
 }
 
+export function detectIncrementFromText(
+  text: string | undefined
+): semver.ReleaseType | null {
+  if (!text) {
+    return null
+  }
+  const lowerText = text.toLowerCase()
+
+  for (const incrementType of INCREMENT_TYPES) {
+    if (lowerText.includes(`[${incrementType}]`)) {
+      return incrementType
+    }
+  }
+
+  return null
+}
+
+export async function getIncrementFromPR(): Promise<semver.ReleaseType | null> {
+  return detectIncrementFromText(github.context.payload.pull_request?.title)
+}
+
+export async function getIncrementFromLatestCommit(): Promise<semver.ReleaseType | null> {
+  return detectIncrementFromText(github.context.payload.head_commit?.message)
+}
+
+export async function determineIncrementLevel(
+  incrementLevel: string
+): Promise<semver.ReleaseType> {
+  if (incrementLevel !== 'auto') {
+    return incrementLevel as semver.ReleaseType
+  }
+  if (github.context.payload.pull_request) {
+    const prIncrement = await getIncrementFromPR()
+    if (prIncrement) {
+      core.debug(`Found increment type [${prIncrement}] in PR title`)
+      return prIncrement
+    }
+  }
+  const commitIncrement = await getIncrementFromLatestCommit()
+  if (commitIncrement) {
+    core.debug(`Found increment type [${commitIncrement}] in latest commit`)
+    return commitIncrement
+  }
+  core.debug('No increment type found, defaulting to patch')
+  return 'patch'
+}
+
 export async function run(): Promise<void> {
   try {
     const githubToken: string = core.getInput('token')
     const prefix = core.getInput('prefix')
     const source: SourceType = core.getInput('source') as SourceType
-    const incrementLevel: semver.ReleaseType = core.getInput(
-      'incrementLevel'
-    ) as semver.ReleaseType
+    const incrementLevelInput: string = core.getInput('incrementLevel')
     const includePrereleases: boolean =
       core.getInput('includePrereleases') === 'true'
     const octokit = await getOctokitClient(githubToken)
     core.debug('client created')
+    const incrementLevel = await determineIncrementLevel(incrementLevelInput)
     let allVersions: Version[] = []
     if (source === 'tags') {
       core.debug('coercing with tags')

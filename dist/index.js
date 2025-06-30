@@ -30,10 +30,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = exports.bumpVersion = exports.filterAndSortVersions = exports.getVersionsFromReleases = exports.getVersionsFromTags = exports.getOctokitClient = exports.Repository = exports.Version = void 0;
+exports.run = exports.determineIncrementLevel = exports.getIncrementFromLatestCommit = exports.getIncrementFromPR = exports.detectIncrementFromText = exports.bumpVersion = exports.filterAndSortVersions = exports.getVersionsFromReleases = exports.getVersionsFromTags = exports.getOctokitClient = exports.Repository = exports.Version = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const semver = __importStar(__nccwpck_require__(2088));
+const INCREMENT_TYPES = [
+    'major',
+    'minor',
+    'patch',
+    'premajor',
+    'preminor',
+    'prepatch',
+    'prerelease'
+];
 class Version {
     raw;
     semver;
@@ -93,15 +102,57 @@ function bumpVersion(version, incrementLevel) {
     return new Version(tmp.semver.inc(incrementLevel).raw);
 }
 exports.bumpVersion = bumpVersion;
+function detectIncrementFromText(text) {
+    if (!text) {
+        return null;
+    }
+    const lowerText = text.toLowerCase();
+    for (const incrementType of INCREMENT_TYPES) {
+        if (lowerText.includes(`[${incrementType}]`)) {
+            return incrementType;
+        }
+    }
+    return null;
+}
+exports.detectIncrementFromText = detectIncrementFromText;
+async function getIncrementFromPR() {
+    return detectIncrementFromText(github.context.payload.pull_request?.title);
+}
+exports.getIncrementFromPR = getIncrementFromPR;
+async function getIncrementFromLatestCommit() {
+    return detectIncrementFromText(github.context.payload.head_commit?.message);
+}
+exports.getIncrementFromLatestCommit = getIncrementFromLatestCommit;
+async function determineIncrementLevel(incrementLevel) {
+    if (incrementLevel !== 'auto') {
+        return incrementLevel;
+    }
+    if (github.context.payload.pull_request) {
+        const prIncrement = await getIncrementFromPR();
+        if (prIncrement) {
+            core.debug(`Found increment type [${prIncrement}] in PR title`);
+            return prIncrement;
+        }
+    }
+    const commitIncrement = await getIncrementFromLatestCommit();
+    if (commitIncrement) {
+        core.debug(`Found increment type [${commitIncrement}] in latest commit`);
+        return commitIncrement;
+    }
+    core.debug('No increment type found, defaulting to patch');
+    return 'patch';
+}
+exports.determineIncrementLevel = determineIncrementLevel;
 async function run() {
     try {
         const githubToken = core.getInput('token');
         const prefix = core.getInput('prefix');
         const source = core.getInput('source');
-        const incrementLevel = core.getInput('incrementLevel');
+        const incrementLevelInput = core.getInput('incrementLevel');
         const includePrereleases = core.getInput('includePrereleases') === 'true';
         const octokit = await getOctokitClient(githubToken);
         core.debug('client created');
+        const incrementLevel = await determineIncrementLevel(incrementLevelInput);
         let allVersions = [];
         if (source === 'tags') {
             core.debug('coercing with tags');
@@ -4399,7 +4450,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "9.2.1";
+var VERSION = "9.2.2";
 
 // pkg/dist-src/normalize-paginated-list-response.js
 function normalizePaginatedListResponse(response) {
@@ -4447,7 +4498,7 @@ function iterator(octokit, route, parameters) {
           const response = await requestMethod({ method, url, headers });
           const normalizedResponse = normalizePaginatedListResponse(response);
           url = ((normalizedResponse.headers.link || "").match(
-            /<([^>]+)>;\s*rel="next"/
+            /<([^<>]+)>;\s*rel="next"/
           ) || [])[1];
           return { value: normalizedResponse };
         } catch (error) {
