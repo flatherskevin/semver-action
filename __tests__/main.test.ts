@@ -1,17 +1,4 @@
-import * as github from '@actions/github'
-import {expect, test} from '@jest/globals'
-import {
-  bumpVersion,
-  detectIncrementFromText,
-  determineIncrementLevel,
-  filterAndSortVersions,
-  getIncrementFromLatestCommit,
-  getIncrementFromPR,
-  getOctokitClient,
-  getVersionsFromReleases,
-  getVersionsFromTags,
-  Version
-} from '../src/main'
+import {expect, jest, test} from '@jest/globals'
 
 const VERSIONS = [
   {name: '0.0.1'},
@@ -38,9 +25,28 @@ class MockOctokitClient {
     return VERSIONS
   }
 }
-Object.defineProperty(github, 'getOctokit', {
-  value: jest.fn().mockReturnValue(new MockOctokitClient())
-})
+
+const mockContext: {payload: Record<string, unknown>} = {
+  payload: {}
+}
+
+jest.unstable_mockModule('@actions/github', () => ({
+  getOctokit: jest.fn().mockReturnValue(new MockOctokitClient()),
+  context: mockContext
+}))
+
+const {
+  bumpVersion,
+  detectIncrementFromText,
+  determineIncrementLevel,
+  filterAndSortVersions,
+  getIncrementFromLatestCommit,
+  getIncrementFromPR,
+  getOctokitClient,
+  getVersionsFromReleases,
+  getVersionsFromTags,
+  Version
+} = await import('../src/main')
 
 test('test getOctokitClient', async () => {
   const client = await getOctokitClient('mock_token')
@@ -150,122 +156,79 @@ test('test detectIncrementFromText undefined', () => {
 })
 
 test('test getIncrementFromPR with increment', async () => {
-  const mockContext = {
-    payload: {
-      pull_request: {
-        title: 'feat: add new feature [minor]'
-      }
+  mockContext.payload = {
+    pull_request: {
+      title: 'feat: add new feature [minor]'
     }
   }
-  Object.defineProperty(github, 'context', {
-    value: mockContext
-  })
 
-  const client = await getOctokitClient('mock_token')
   const result = await getIncrementFromPR()
   expect(result).toBe('minor')
 })
 
 test('test getIncrementFromPR without increment', async () => {
-  const mockContext = {
-    payload: {
-      pull_request: {
-        title: 'feat: add new feature'
-      }
+  mockContext.payload = {
+    pull_request: {
+      title: 'feat: add new feature'
     }
   }
-  Object.defineProperty(github, 'context', {
-    value: mockContext
-  })
 
-  const client = await getOctokitClient('mock_token')
   const result = await getIncrementFromPR()
   expect(result).toBeNull()
 })
 
 test('test getIncrementFromLatestCommit with increment', async () => {
-  const mockContext = {
-    payload: {
-      head_commit: {
-        message: 'fix: bug fix [patch]'
-      }
+  mockContext.payload = {
+    head_commit: {
+      message: 'fix: bug fix [patch]'
     }
   }
-  Object.defineProperty(github, 'context', {
-    value: mockContext
-  })
 
-  const client = await getOctokitClient('mock_token')
   const result = await getIncrementFromLatestCommit()
   expect(result).toBe('patch')
 })
 
 test('test getIncrementFromLatestCommit without increment', async () => {
-  const mockContext = {
-    payload: {
-      head_commit: {
-        message: 'fix: bug fix'
-      }
+  mockContext.payload = {
+    head_commit: {
+      message: 'fix: bug fix'
     }
   }
-  Object.defineProperty(github, 'context', {
-    value: mockContext
-  })
 
-  const client = await getOctokitClient('mock_token')
   const result = await getIncrementFromLatestCommit()
   expect(result).toBeNull()
 })
 
 test('test determineIncrementLevel with explicit level', async () => {
-  const client = await getOctokitClient('mock_token')
   const result = await determineIncrementLevel('major')
   expect(result).toBe('major')
 })
 
 test('test determineIncrementLevel auto with PR increment', async () => {
-  const mockContext = {
-    payload: {
-      pull_request: {
-        title: 'feat: add new feature [minor]'
-      }
+  mockContext.payload = {
+    pull_request: {
+      title: 'feat: add new feature [minor]'
     }
   }
-  Object.defineProperty(github, 'context', {
-    value: mockContext
-  })
 
-  const client = await getOctokitClient('mock_token')
   const result = await determineIncrementLevel('auto')
   expect(result).toBe('minor')
 })
 
 test('test determineIncrementLevel auto with commit increment', async () => {
-  const mockContext = {
-    payload: {
-      head_commit: {
-        message: 'fix: bug fix [patch]'
-      }
+  mockContext.payload = {
+    head_commit: {
+      message: 'fix: bug fix [patch]'
     }
   }
-  Object.defineProperty(github, 'context', {
-    value: mockContext
-  })
 
-  const client = await getOctokitClient('mock_token')
   const result = await determineIncrementLevel('auto')
   expect(result).toBe('patch')
 })
 
 test('test determineIncrementLevel auto with no increment found', async () => {
-  const mockContext = {
-    payload: {}
-  }
-  Object.defineProperty(github, 'context', {
-    value: mockContext
-  })
+  mockContext.payload = {}
 
-  const client = await getOctokitClient('mock_token')
   const result = await determineIncrementLevel('auto')
   expect(result).toBe('patch')
 })
