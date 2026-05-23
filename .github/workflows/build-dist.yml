@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Set Node.js 20.x
-        uses: actions/setup-node@v4.4.0
+        uses: actions/setup-node@v6.4.0
         with:
           node-version: 20.x
       - name: Install dependencies
@@ -31,7 +31,7 @@ jobs:
           yarn build
           yarn package
       - name: Add and commit
-        uses: EndBug/add-and-commit@v9 # You can change this to use a specific version.
+        uses: EndBug/add-and-commit@v10 # You can change this to use a specific version.
         with:
           add: "./dist"
           message: "rebuilding ./dist"
