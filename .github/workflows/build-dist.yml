@@ -31,7 +31,7 @@ jobs:
           yarn build
           yarn package
       - name: Add and commit
-        uses: EndBug/add-and-commit@v10 # You can change this to use a specific version.
+        uses: EndBug/add-and-commit@v11 # You can change this to use a specific version.
         with:
           add: "./dist"
           message: "rebuilding ./dist"
